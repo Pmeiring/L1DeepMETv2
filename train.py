@@ -14,7 +14,7 @@ from torch_geometric.data import DataLoader
 from tqdm import tqdm
 import argparse
 import utils
-import model.net as net
+import model.graph_met_network_HGQ as net
 import model.data_loader as data_loader
 from evaluate import evaluate
 import warnings
@@ -33,7 +33,7 @@ Change from DeepMETv2
 
 '''
 
-
+# docu for what each argument means, command line parsing
 parser = argparse.ArgumentParser()
 parser.add_argument('--restore_file', default=None,
                     help="Optional, name of the file in --model_dir containing weights to reload before \
@@ -57,7 +57,7 @@ scale_momentum = 128 # scaling factor of pT, px, py (hence the target MET)
 epochs = 100
 
 def train(model, device, optimizer, scheduler, loss_fn, dataloader):
-    model.train()
+    model.train() # make pytorch layers properly train
     
     loss_avg_arr = []
     loss_avg = utils.RunningAverage()
@@ -75,12 +75,18 @@ def train(model, device, optimizer, scheduler, loss_fn, dataloader):
             etaphi = torch.cat([data.x[:,3][:,None], data.x[:,4][:,None]], dim=1)
 
             # NB: there is a problem right now for comparing hits at the +/- pi boundary
+            # to(device), .cpu() for etaphi and data.batch because those tensors must be cpu, no mps support yet.
             edge_index = radius_graph(etaphi, r=deltaR, batch=data.batch, loop=False, max_num_neighbors=255)  # turn off self-loop
-            result = model(x_cont, x_cat, edge_index, data.batch)
+            result = model(x_cont, x_cat, edge_index, data.batch, training = True)
             
             loss = loss_fn(result, data.x, data.y, data.batch, scale_momentum)
+            loss += sum(model.losses) # keras, pytorch lack communication for hgq-weights and overall gnn struct
             loss.backward()
             optimizer.step()
+            # manual constraint enforcing because using torch.optim with adamW/LR scheduler
+            for w in model.weights:
+                if w.constraint is not None:
+                    w.assign(w.constraint(w))
             
             # update the average loss
             loss_avg_arr.append(loss.item())
@@ -110,12 +116,15 @@ if __name__ == '__main__':
     # gpu
     os.environ["CUDA_VISIBLE_DEVICES"] = str(0)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+    print('Using device:', device)
 
     # norm for the input data
     norm = torch.tensor([1./scale_momentum, 1./scale_momentum, 1./scale_momentum, 1., 1., 1.]).to(device)   # pt, px, py: scale by 128
  
     # model
-    model = net.Net(n_features_cont, n_features_cat, norm).to(device) #include puppi
+    # changed to GraphMETNetwork, use same parameters as net.py
+    model = net.GraphMETNetwork(n_features_cont, n_features_cat, norm, hidden_dim=32, conv_depth=2).to(device) #include puppi
     #model = net.Net(n_features_cont-1, n_features_cat, norm).to(device) #remove puppi
     
     optimizer = torch.optim.AdamW(model.parameters(),lr=float(args.lr), weight_decay=float(args.weight_decay))

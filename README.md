@@ -22,28 +22,6 @@ pip install torch-geometric
 pip install coffea
 pip install mplhep
 ```
-If running on one of the rogue machines (rogue01, rogue02), use micromamba instead of conda. That is, instead of above commands: 
-
-```
-# 1. Create and activate new environment with python 
-micromamba create -n deepmet python=3.9
-micromamba activate deepmet
-
-# 2. Install PyTorch + CUDA 
-pip install torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0 --extra-index-url https://download.pytorch.org/whl/cu121
-
-# 3. Install PyTorch Geometric extensions 
-pip install pyg-lib torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-2.3.0+cu121.html
-
-# 4. Install torch-geometric meta package 
-pip install torch-geometric
-
-# 5. Other Python packages
-pip install coffea mplhep
-
-```
-
-
 
 ## Produce Input Data
 

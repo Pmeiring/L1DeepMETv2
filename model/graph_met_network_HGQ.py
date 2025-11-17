@@ -1,33 +1,95 @@
-"""Defines the neural network, loss function and metrics"""
-
-import numpy as np
-import math
+import os
+os.environ["KERAS_BACKEND"] = "torch"
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from hgq.layers import QDense, QBatchNormalization, QUnaryFunctionLUT
 from torch_scatter import scatter_add
-from model.dynamic_reduction_network import DynamicReductionNetwork
-from model.graph_met_network import GraphMETNetwork
 
-'''
+from torch import nn
 
-Change from DeepMETv2
-1. Add loss_fn_response for response-tuned MET
+# from torch_geometric.nn.conv import GraphConv, EdgeConv, GCNConv
+from .EdgeConv_HGQ import EdgeConv # need the dot so that it looks in same folder
 
-'''
+class GraphMETNetwork(nn.Module):
+    def __init__ (self, continuous_dim, cat_dim, norm, output_dim=1, hidden_dim=32, conv_depth=1):
+    #def __init__ (self, continuous_dim, cat_dim, output_dim=1, hidden_dim=32, conv_depth=1):
+        super(GraphMETNetwork, self).__init__()
+       
+        self.datanorm = norm
 
-class Net(nn.Module):
-    def __init__(self, continuous_dim, categorical_dim, norm):
-        super(Net, self).__init__()
+        self.embed_charge = nn.Embedding(3, hidden_dim//4)
+        self.embed_pdgid = nn.Embedding(7, hidden_dim//4)
         
-        self.graphnet = GraphMETNetwork(continuous_dim, categorical_dim, norm,
-                                        output_dim=1, hidden_dim=32,
-                                        conv_depth=2)
+
+        self.embed_continuous_dense = QDense(hidden_dim//2) # output
+        # self.embed_continuous_dense.build((None, continuous_dim)) # input
+        # kernal / input / bias config: kq_conf, iq_conf, bq_conf
+        self.embed_continuous_elu = QUnaryFunctionLUT(activation='elu') # iq_conf, oq_conf
+
+        self.embed_categorical_dense = QDense(hidden_dim//2)
+        self.embed_categorical_elu = QUnaryFunctionLUT(activation='elu')
+
+        self.encode_all_dense = QDense(hidden_dim)
+        self.encode_all_elu = QUnaryFunctionLUT(activation='elu')
+        self.bn_all = QBatchNormalization(axis=-1) # kq_conf, iq_conf, bq_conf
+ 
+        self.conv_continuous = nn.ModuleList()        
+        for _ in range(conv_depth):
+            # mesg = QDense(hidden_dim)
+            # removed .jittable() as jocelyn impl doesn't have it, altered input as expectes in_channels/out_channels instead of nn
+            conv_layer = EdgeConv(in_channels=hidden_dim, out_channels=hidden_dim) # to account for changed syntax
+            # bn_layer = QBatchNormalization(axis=-1)
+            # self.conv_continuous.append(nn.ModuleList([conv_layer, bn_layer]))
+            self.conv_continuous.append(conv_layer) # because bn layer now inside of the edgeconv impl
+
+        self.output_dense1 = QDense(hidden_dim//2)
+        self.output_elu = QUnaryFunctionLUT(activation='elu')
+        self.output_dense2 = QDense(output_dim)
+
+        self.pdgs = [1, 2, 11, 13, 22, 130, 211]
+
+    def forward(self, x_cont, x_cat, edge_index, batch, training = False): # by default training is false.
+        # Normalize the input values within [0,1] range: pt, px, py, eta, phi, puppiWeight, pdgId, charge
+        #norm = torch.tensor([1./2950., 1./2950, 1./2950, 1., 1., 1.]).to(device) 
+
+        x_cont *= self.datanorm
+
+        emb_cont = self.embed_continuous_dense(x_cont, training=training)
+        emb_cont = self.embed_continuous_elu(emb_cont, training=training)
+
+        emb_chrg = self.embed_charge(x_cat[:, 1] + 1)
+
+        pdg_remap = torch.abs(x_cat[:, 0])
+        for i, pdgval in enumerate(self.pdgs):
+            pdg_remap = torch.where(pdg_remap == pdgval, torch.full_like(pdg_remap, i), pdg_remap)
+        emb_pdg = self.embed_pdgid(pdg_remap)
+
+        emb_cat = torch.cat([emb_chrg, emb_pdg], dim=1)
+        emb_cat = self.embed_categorical_dense(emb_cat, training=training)
+        emb_cat = self.embed_categorical_elu(emb_cat, training=training)
+
+        emb = torch.cat([emb_cat, emb_cont], dim=1)
+        emb = self.encode_all_dense(emb, training=training)
+        emb = self.encode_all_elu(emb, training=training)
+        emb = self.bn_all(emb, training=training)
+
+        # graph convolution for continuous variables
+        # for co_conv in self.conv_continuous:
+            # dynamic, evolving knn
+            # emb = emb + co_conv[1](co_conv[0](emb, knn_graph(emb, k=20, batch=batch, loop=True)))
+            # static
+            # emb = emb + co_conv[1](co_conv[0](emb, edge_index))
+        for conv_layer in self.conv_continuous:
+            emb = emb + conv_layer(emb, edge_index, batch, training=training)
+            # bnlayer already from hgq (keras), conv_layer is jocelyn impl, need to alter
+                
+        # out = self.output(emb)
+        out = self.output_dense1(emb, training = training)
+        out = self.output_elu(out, training = training)
+        out = self.output_dense2(out, training = training)
+        
+        return out.squeeze(-1)
     
-    def forward(self, x_cont, x_cat, edge_index, batch):
-        weights = self.graphnet(x_cont, x_cat, edge_index, batch)
-        return torch.sigmoid(weights)
-        #return F.relu(weights)
+# COPIED LOSS FUNCTIONS OVER FROM NET.PY
 
 # tensor operations
 def getdot(vx, vy):
@@ -298,3 +360,4 @@ def metric(weights, particles_vis, genMET, batch, scale_momentum = 128.):
 metrics = {
     'resolution': metric
 }
+
