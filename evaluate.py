@@ -197,19 +197,54 @@ def evaluate(model, device, loss_fn, dataloader, metrics, deltaR, deltaR_dz, mod
         u_par_scaled_hist=[]
         R_hist=[]
 
+        # for i in range(1, len(bin_edges)):
+        #     R_i=abs(R_arr[np.where(inds==i)[0]])
+        #     R_hist.append(np.mean(R_i))
+            
+        #     u_perp_i=u_perp_arr[np.where(inds==i)[0]]
+        #     u_perp_scaled_i=u_perp_i/np.mean(R_i)
+        #     u_perp_hist.append((np.quantile(u_perp_i,0.84)-np.quantile(u_perp_i,0.16))/2.)
+        #     u_perp_scaled_hist.append((np.quantile(u_perp_scaled_i,0.84)-np.quantile(u_perp_scaled_i,0.16))/2.)
+            
+        #     u_par_i=u_par_arr[np.where(inds==i)[0]]
+        #     u_par_scaled_i=u_par_i/np.mean(R_i)
+        #     u_par_hist.append((np.quantile(u_par_i,0.84)-np.quantile(u_par_i,0.16))/2.)
+        #     u_par_scaled_hist.append((np.quantile(u_par_scaled_i,0.84)-np.quantile(u_par_scaled_i,0.16))/2.)
+
         for i in range(1, len(bin_edges)):
-            R_i=abs(R_arr[np.where(inds==i)[0]])
-            R_hist.append(np.mean(R_i))
+            # Find indices of events falling into this bin
+            indices = np.where(inds==i)[0]
             
-            u_perp_i=u_perp_arr[np.where(inds==i)[0]]
-            u_perp_scaled_i=u_perp_i/np.mean(R_i)
-            u_perp_hist.append((np.quantile(u_perp_i,0.84)-np.quantile(u_perp_i,0.16))/2.)
-            u_perp_scaled_hist.append((np.quantile(u_perp_scaled_i,0.84)-np.quantile(u_perp_scaled_i,0.16))/2.)
+            # CHECK: Do we actually have events in this bin?
+            if len(indices) > 0:
+                R_i = abs(R_arr[indices])
+                mean_R = np.mean(R_i)
+                R_hist.append(mean_R)
+                
+                # Avoid division by zero if mean_R happens to be 0
+                scale_factor = mean_R if mean_R != 0 else 1.0
+
+                # u_perp calculations
+                u_perp_i = u_perp_arr[indices]
+                u_perp_scaled_i = u_perp_i / scale_factor
+                
+                u_perp_hist.append((np.quantile(u_perp_i, 0.84) - np.quantile(u_perp_i, 0.16)) / 2.)
+                u_perp_scaled_hist.append((np.quantile(u_perp_scaled_i, 0.84) - np.quantile(u_perp_scaled_i, 0.16)) / 2.)
+                
+                # u_par calculations
+                u_par_i = u_par_arr[indices]
+                u_par_scaled_i = u_par_i / scale_factor
+                
+                u_par_hist.append((np.quantile(u_par_i, 0.84) - np.quantile(u_par_i, 0.16)) / 2.)
+                u_par_scaled_hist.append((np.quantile(u_par_scaled_i, 0.84) - np.quantile(u_par_scaled_i, 0.16)) / 2.)
             
-            u_par_i=u_par_arr[np.where(inds==i)[0]]
-            u_par_scaled_i=u_par_i/np.mean(R_i)
-            u_par_hist.append((np.quantile(u_par_i,0.84)-np.quantile(u_par_i,0.16))/2.)
-            u_par_scaled_hist.append((np.quantile(u_par_scaled_i,0.84)-np.quantile(u_par_scaled_i,0.16))/2.)
+            else:
+                # FALLBACK: If bin is empty, append 0s to keep array lengths consistent
+                R_hist.append(0.0)
+                u_perp_hist.append(0.0)
+                u_perp_scaled_hist.append(0.0)
+                u_par_hist.append(0.0)
+                u_par_scaled_hist.append(0.0)
 
         u_perp_resolution=np.histogram(qT_hist, bins=x_n, range=(0,max_x), weights=u_perp_hist)
         u_perp_scaled_resolution=np.histogram(qT_hist, bins=x_n, range=(0,max_x), weights=u_perp_scaled_hist)

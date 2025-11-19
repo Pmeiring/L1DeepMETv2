@@ -88,6 +88,34 @@ class GraphMETNetwork(nn.Module):
         out = self.output_dense2(out, training = training)
         
         return out.squeeze(-1)
+    @property
+    def losses(self):
+        # Collect losses from all sub-modules (like QDense, etc.)
+        collected_losses = []
+        for module in self.modules():
+            # Skip the container itself to avoid infinite recursion
+            if module is self:
+                continue
+            
+            # If a sub-layer has a 'losses' attribute (standard in Keras/HGQ layers), collect it
+            if hasattr(module, 'losses'):
+                collected_losses.extend(module.losses)
+        
+        return collected_losses
+    @property
+    def weights(self):
+        # Collect weights from all sub-modules (like QDense, etc.)
+        collected_weights = []
+        for module in self.modules():
+            if module is self:
+                continue
+            
+            # If a sub-layer has a 'weights' attribute, collect it
+            if hasattr(module, 'weights'):
+                collected_weights.extend(module.weights)
+        
+        return collected_weights
+        
     
 # COPIED LOSS FUNCTIONS OVER FROM NET.PY
 
@@ -355,7 +383,13 @@ def metric(weights, particles_vis, genMET, batch, scale_momentum = 128.):
     }
     
     return resolutions, METs, weights, puppi_weights
+@property
+def losses(self):
+    return [l.loss for l in self.layers if hasattr(l, 'loss')]
 
+@property
+def weights(self):
+    return [l for l in self.layers if hasattr(l, 'constraint')]
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
     'resolution': metric
