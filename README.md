@@ -23,6 +23,30 @@ pip install coffea
 pip install mplhep
 ```
 
+If running on one of the rogue machines (rogue01, rogue02), use micromamba instead of conda. That is, instead of above commands: 
+
+```
+# 1. Create and activate new environment with python 
+micromamba create -n deepmet python=3.10
+micromamba activate deepmet
+
+# 2. Install PyTorch + CUDA 
+pip install torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0 --extra-index-url https://download.pytorch.org/whl/cu121
+
+# 3. Install HGQ2
+pip install hgq2
+
+# 3. Install PyTorch Geometric extensions 
+pip install pyg-lib torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-2.3.0+cu121.html
+
+# 4. Install torch-geometric meta package 
+pip install torch-geometric
+
+# 5. Other Python packages
+pip install coffea mplhep
+
+```
+
 ## Produce Input Data
 
 For producing training input data, we use _TTbar process_ simulation data available in [this link](https://cernbox.cern.ch/files/link/public/JK2InUjatHFxFbf?tiles-size=1&items-per-page=100&view-mode=resource-table). The data files are in `.root` format and they contain _L1_ information; the full list of variables available in the `.root` files can be found in [`./data_ttbar/branch_list_L1_TTbar.csv`](https://github.com/DeepMETv2/L1DeepMETv2/blob/master/data_ttbar/branch_list_L1_TTbar.csv). From the list of variables, we extract the ones that will be used for our training and save it to `.npz` format under `./data_ttbar/raw/`, using [`./data_ttbar/generate_npz.py`](https://github.com/DeepMETv2/L1DeepMETv2/blob/master/data_ttbar/generate_npz.py). 
