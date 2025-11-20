@@ -36,13 +36,13 @@ pip install torch==2.3.0+cu121 torchvision==0.18.0+cu121 torchaudio==2.3.0 --ext
 # 3. Install HGQ2
 pip install hgq2
 
-# 3. Install PyTorch Geometric extensions 
+# 4. Install PyTorch Geometric extensions 
 pip install pyg-lib torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-2.3.0+cu121.html
 
-# 4. Install torch-geometric meta package 
+# 5. Install torch-geometric meta package 
 pip install torch-geometric
 
-# 5. Other Python packages
+# 6. Other Python packages
 pip install coffea mplhep
 
 ```
