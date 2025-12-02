@@ -28,7 +28,7 @@ Changes made from DeepMETv2
 
 '''
 
-# provides data in batches
+
 class METDataset(Dataset):
     """PyTorch geometric dataset from processed hit information"""
     
@@ -48,8 +48,7 @@ class METDataset(Dataset):
     @property
     def existing_pt_names(self):
         if not hasattr(self,'pt_files'):
-            # will only load the slice files I just uploaded.
-            self.pt_files = sorted(glob.glob(self.processed_dir+'/*file*slice*nevent*pt'))[:20] # temp restricted to the first 20 for test purposes.
+            self.pt_files = sorted(glob.glob(self.processed_dir+'/*file*slice*nevent*pt'))
         return [f.split('/')[-1] for f in self.pt_files]
     
     @property

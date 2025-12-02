@@ -33,7 +33,7 @@ Change from DeepMETv2
 
 '''
 
-# docu for what each argument means, command line parsing
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--restore_file', default=None,
                     help="Optional, name of the file in --model_dir containing weights to reload before \
@@ -57,7 +57,7 @@ scale_momentum = 128 # scaling factor of pT, px, py (hence the target MET)
 epochs = 100
 
 def train(model, device, optimizer, scheduler, loss_fn, dataloader):
-    model.train() # make pytorch layers properly train
+    model.train()
     
     loss_avg_arr = []
     loss_avg = utils.RunningAverage()

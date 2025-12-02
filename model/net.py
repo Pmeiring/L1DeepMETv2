@@ -80,17 +80,12 @@ def loss_fn_response_tune(weights, particles_vis, genMET, batch, c = 500, scale_
 
     loss=0.5*( ( uTx - true_px)**2 + ( uTy - true_py)**2 ).mean() 
 
-    #print('loss (no corr):', loss)
     # response correction
     v_true = torch.stack((true_px,true_py),dim=1)
     v_regressed = torch.stack((uTx, uTy),dim=1)
         
     # response = getdot( v_true, v_regressed ) / getdot( v_true, v_true ) # dot product
     response = getscale(v_regressed) / getscale(v_true) # ratio of the MET scale
-    
-    #print('response:', response)
-    #print('v_true:', getscale(v_true))
-    #print('v_regressed:', getscale(v_regressed))
 
     #pT_thres = 0.         # calculate response only taking into account for events with genMET above threshold
     pT_thres = 50./scale_momentum
@@ -101,10 +96,6 @@ def loss_fn_response_tune(weights, particles_vis, genMET, batch, c = 500, scale_
     
     response_term = c * (torch.sum(1 - response[resp_neg]) + torch.sum(response[resp_pos] - 1))
 
-    #print('1 - response[resp_neg]:', 1 - response[resp_neg])
-    #print('1 - response[resp_pos]:', response[resp_pos]-1)
-    #print('response_term:', response_term)
-    
     loss += response_term
 
     return loss
@@ -218,7 +209,7 @@ def metric(weights, particles_vis, genMET, batch, scale_momentum = 128.):
     # regressed uT: momentum of the system of all visible particles
     uTx = scatter_add(weights*px, batch) 
     uTy = scatter_add(weights*py, batch) 
-    
+
     # regressed MET
     METx = (-1) * uTx * scale_momentum
     METy = (-1) * uTy * scale_momentum

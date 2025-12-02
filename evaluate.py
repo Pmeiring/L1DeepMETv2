@@ -197,20 +197,6 @@ def evaluate(model, device, loss_fn, dataloader, metrics, deltaR, deltaR_dz, mod
         u_par_scaled_hist=[]
         R_hist=[]
 
-        # for i in range(1, len(bin_edges)):
-        #     R_i=abs(R_arr[np.where(inds==i)[0]])
-        #     R_hist.append(np.mean(R_i))
-            
-        #     u_perp_i=u_perp_arr[np.where(inds==i)[0]]
-        #     u_perp_scaled_i=u_perp_i/np.mean(R_i)
-        #     u_perp_hist.append((np.quantile(u_perp_i,0.84)-np.quantile(u_perp_i,0.16))/2.)
-        #     u_perp_scaled_hist.append((np.quantile(u_perp_scaled_i,0.84)-np.quantile(u_perp_scaled_i,0.16))/2.)
-            
-        #     u_par_i=u_par_arr[np.where(inds==i)[0]]
-        #     u_par_scaled_i=u_par_i/np.mean(R_i)
-        #     u_par_hist.append((np.quantile(u_par_i,0.84)-np.quantile(u_par_i,0.16))/2.)
-        #     u_par_scaled_hist.append((np.quantile(u_par_scaled_i,0.84)-np.quantile(u_par_scaled_i,0.16))/2.)
-
         for i in range(1, len(bin_edges)):
             # Find indices of events falling into this bin
             indices = np.where(inds==i)[0]
