@@ -32,7 +32,8 @@ Changes made from DeepMETv2
 class METDataset(Dataset):
     """PyTorch geometric dataset from processed hit information"""
     
-    def __init__(self, root):
+    def __init__(self, root, is_delphes):
+        self.is_delphes=is_delphes
         super(METDataset, self).__init__(root)
     
     def download(self):
@@ -48,7 +49,10 @@ class METDataset(Dataset):
     @property
     def existing_pt_names(self):
         if not hasattr(self,'pt_files'):
-            self.pt_files = sorted(glob.glob(self.processed_dir+'/*file*slice*nevent*pt'))
+            if self.is_delphes:
+                self.pt_files = sorted(glob.glob(self.processed_dir+'/*file*event*pt'))
+            else:
+                self.pt_files = sorted(glob.glob(self.processed_dir+'/*file*slice*nevent*pt'))
         return [f.split('/')[-1] for f in self.pt_files]
     
     @property
@@ -114,9 +118,9 @@ class METDataset(Dataset):
                                y=torch.from_numpy(y))
                 torch.save(outdata, osp.join(self.processed_dir,(raw_path.replace('.npz','_'+str(ievt)+'.pt')).split('/')[-1] ))
 
-def fetch_dataloader(data_dir, batch_size, validation_split):
+def fetch_dataloader(data_dir, batch_size, validation_split, is_delphes):
     transform = T.Cartesian(cat=False)
-    dataset = METDataset(data_dir)
+    dataset = METDataset(data_dir, is_delphes)
     #print(dataset)
     dataset_size = len(dataset)
     indices = list(range(dataset_size))

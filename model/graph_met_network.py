@@ -9,7 +9,7 @@ from torch_geometric.nn.conv import GraphConv, EdgeConv, GCNConv
 from torch_cluster import radius_graph, knn_graph
 
 class GraphMETNetwork(nn.Module):
-    def __init__ (self, continuous_dim, cat_dim, norm, output_dim=1, hidden_dim=32, conv_depth=1):
+    def __init__ (self, continuous_dim, cat_dim, norm, output_dim=1, hidden_dim=32, conv_depth=1, is_delphes=False):
     #def __init__ (self, continuous_dim, cat_dim, output_dim=1, hidden_dim=32, conv_depth=1):
         super(GraphMETNetwork, self).__init__()
        
@@ -45,7 +45,10 @@ class GraphMETNetwork(nn.Module):
                                     nn.ELU(),
                                     nn.Linear(hidden_dim//2, output_dim)
                                    )
-        self.pdgs = [1, 2, 11, 13, 22, 130, 211]
+        if is_delphes:
+            self.pdgs = [0, 6, 11, 13, 22, 45, 65]
+        else:
+            self.pdgs = [1, 2, 11, 13, 22, 130, 211]
 
     def forward(self, x_cont, x_cat, edge_index, batch):
         # Normalize the input values within [0,1] range: pt, px, py, eta, phi, puppiWeight, pdgId, charge

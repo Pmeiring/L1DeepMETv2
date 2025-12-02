@@ -48,6 +48,8 @@ parser.add_argument('--lr', default=0.01,
                     help="Learning rate")
 parser.add_argument('--weight_decay', default=0.001,
                     help="Weight decay")
+parser.add_argument('--is_delphes', default=False,
+                    help="Is dataset Delphes simulation (True) or CMS simulation (False, default)")
 
 n_features_cont = 6
 n_features_cat = 2
@@ -101,7 +103,8 @@ if __name__ == '__main__':
     # load data
     dataloaders = data_loader.fetch_dataloader(data_dir=osp.join(os.environ['PWD'],args.data), 
                                                batch_size=int(args.batch_size),
-                                               validation_split=.2)
+                                               validation_split=.2,
+                                               is_delphes=args.is_delphes)
     train_dl = dataloaders['train']
     test_dl = dataloaders['test']
 
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     norm = torch.tensor([1./scale_momentum, 1./scale_momentum, 1./scale_momentum, 1., 1., 1.]).to(device)   # pt, px, py: scale by 128
  
     # model
-    model = net.Net(n_features_cont, n_features_cat, norm).to(device) #include puppi
+    model = net.Net(n_features_cont, n_features_cat, norm, args.is_delphes).to(device) #include puppi
     #model = net.Net(n_features_cont-1, n_features_cat, norm).to(device) #remove puppi
     
     optimizer = torch.optim.AdamW(model.parameters(),lr=float(args.lr), weight_decay=float(args.weight_decay))
