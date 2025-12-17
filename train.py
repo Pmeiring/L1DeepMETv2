@@ -56,7 +56,7 @@ n_features_cat = 2
 
 scale_momentum = 128 # scaling factor of pT, px, py (hence the target MET)
 
-epochs = 100
+epochs = 3
 
 def train(model, device, optimizer, scheduler, loss_fn, dataloader):
     model.train()
@@ -113,6 +113,7 @@ if __name__ == '__main__':
     # gpu
     os.environ["CUDA_VISIBLE_DEVICES"] = str(0)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
 
     # norm for the input data
     norm = torch.tensor([1./scale_momentum, 1./scale_momentum, 1./scale_momentum, 1., 1., 1.]).to(device)   # pt, px, py: scale by 128

@@ -23,13 +23,14 @@ class Net(nn.Module):
         
         self.graphnet = GraphMETNetwork(continuous_dim, categorical_dim, norm,
                                         output_dim=1, hidden_dim=32,
-                                        conv_depth=4, is_delphes=self.is_delphes)
+                                        conv_depth=2, is_delphes=self.is_delphes)
     
     def forward(self, x_cont, x_cat, edge_index, batch):
         weights = self.graphnet(x_cont, x_cat, edge_index, batch)
-        relu_layer = nn.ReLU()
-        return relu_layer(weights)
-        #return torch.sigmoid(weights)
+        # relu_layer = nn.ReLU()
+        # return relu_layer(weights)
+        return torch.sigmoid(weights)
+        # return F.relu(weights)
 
 # tensor operations
 def getdot(vx, vy):
