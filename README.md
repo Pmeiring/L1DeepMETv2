@@ -1,12 +1,20 @@
 # L1DeepMETv2
-**GNN** based algorithm for **online** MET reconstruction for CMS L1 trigger. Regress MET from _L1Puppi candidates_.
+
+## Introduction
+
+L1DeepMETv2 is a **GNN** based algorithm for **online** MET regression for the Phase-2 CMS Level-1 Trigger, using L1 PUPPI candidates as input. It regresses to the generator-level MET by assigning a per-particle weight that is applied to the L1 PUPPI candidates to compute the L1 MET sum.
 
 This work extends the following efforts for MET reconstruction algorithms:
 - **Fully-Connected Neural Network (FCNN)** based algorithm in `keras` for **offline** MET reconstruction: [DeepMETv1](https://github.com/DeepMETv2/DeepMETv1)
 - **Graph Neural Network (GNN)** based algorithm in `torch` for **offline** MET reconstruction: [DeepMETv2](https://github.com/DeepMETv2/DeepMETv2)
 - **FCNN** based algorithm in `keras` for **online** MET reconstruction: [L1MET](https://github.com/jmduarte/L1METML) 
 
-
+For the L1DeepMETv2 algorithm itself, there are several versions, each relying on different model architectures or training samples.
+- **The main version** can be found here: [L1DeepMETv2](https://github.com/DeepMETv2/L1DeepMETv2). Trained with central CMS samples of 200 PU tt-bar events that are produced with the [FastPUPPI framework](https://github.com/p2l1pfp/FastPUPPI/blob/11_1_X/NtupleProducer/python/runPerformanceNTuple.py#L588-L601) in CMSSW_11_1. These are the same samples as originally used for the online FCNN. They are preprocessed for training the L1DeepMETv2 as described in the [README](https://github.com/DeepMETv2/L1DeepMETv2/tree/master?tab=readme-ov-file). 
+- **The Delphes version** can be found here: [Delphes version](https://github.com/Pmeiring/L1DeepMETv2/tree/dev_delphes_oldmodel). The model architecture is largely the same, but it relies on Delphes simulated samples of 200 PU tt-bar events to provide the L1 PUPPI input candidates. These were produced by Eric Anton Moreno et al. in the context of the [NGT project](https://indico.cern.ch/event/1594908/contributions/6721724/attachments/3154497/5602747/L1T%20weekly%20WP3.7.pdf) (see also this [sample-bank](https://huggingface.co/datasets/fastmachinelearning/collide-1m/tree/main)). This Delphes model version is used for the FlowGNN+EdgeConv publication with GaTech.
+- **The HGQ version** can be found here: [HGQ version](https://github.com/Pmeiring/L1DeepMETv2/tree/dev_hgq). This is the product of Leo Yao and Jocelyn Yu (originally pushed to a [seperate repo](https://github.com/LeoY20/L1DeepMETv2-HGQ)), who worked on providing a high-granularity quantization (HGQ) version of L1DeepMETv2, which required for the first time also implementing the quantization for the EdgeConv layer. 
+- **The Golden-C version** can be found here: [Golden-C version](https://github.com/Pmeiring/L1DeeptMetv2-GoldenC/tree/main). This is the C++ implementation of the Pytorch version of the L1DeepMETv2 model. It is a fork of the [repo of Davendra Maharaj'](https://github.com/davendramaharaj1/L1DeeptMetv2-GoldenC/tree/main), who originally implemented this based on the model "main version". However, for the FlowGNN+EdgeConv publication with GaTech, Peter updated the C++ version repo to point to the newer Delphes model. Tu Pham worked on this repo as well to address some mismatches in the PyTorch and C++ model predictions - so there may be a more up-to-date fork.
+- **Miscellaneous versions**: Several other versions - newer than the "main version" - were trained with other architectures (eg. sigmoid vs. Relu activation), but these did not seem to improve performance a lot, hence the above versions are probably the most important ones.
 
 ## Prerequisites 
 
